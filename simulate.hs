@@ -54,20 +54,20 @@ i = 0 :+ 1
 -- @-node:gcross.20100505233148.1270:Values
 -- @+node:gcross.20091120111528.1234:Operator tensors
 phi_block_length =
-    assert (b_phi_block_length == q_phi_block_length) $
-    assert (b_phi_block_length == end_phi_block_length) $
-    b_phi_block_length
+    assert (b_H_phi_block_length == q_H_phi_block_length) $
+    assert (b_H_phi_block_length == end_H_phi_block_length) $
+    b_H_phi_block_length
   where
-    b_phi_block_length = length b_phi_block
-    q_phi_block_length = length q_phi_block
-    end_phi_block_length = length end_phi_block
+    b_H_phi_block_length = length b_H_phi_block
+    q_H_phi_block_length = length q_H_phi_block
+    end_H_phi_block_length = length end_H_phi_block
 
 lambda_block_length =
-    assert (b_lambda_block_length == q_lambda_block_length) $
-    b_lambda_block_length
+    assert (b_H_lambda_block_length == q_H_lambda_block_length) $
+    b_H_lambda_block_length
   where
-    b_lambda_block_length = length b_lambda_block
-    q_lambda_block_length = length q_lambda_block
+    b_H_lambda_block_length = length b_H_lambda_block
+    q_H_lambda_block_length = length q_H_lambda_block
 
 phi_block_start = 2
 lambda_block_start = phi_block_start + phi_block_length
@@ -77,18 +77,18 @@ final = lambda_block_start + lambda_block_length
 -- @+node:gcross.20100505233148.1275:b - 3
 -- @+others
 -- @+node:gcross.20100505233148.1269:H_phi
-b_H_phi :: Int → OperatorSiteSpecification N3
-b_H_phi block_start =
-    zipWith ($) [1 ⇨ block_start+i | i <- [0..]]
+b_H_phi :: OperatorSiteSpecification N3
+b_H_phi =
+    zipWith ($) [1 ⇨ phi_block_start+i | i <- [0..]]
     .
     map (
         \(coefficient,matrix) ->
             coefficient *: (SingleSiteOperator matrix)
     )
     $
-    b_phi_block
+    b_H_phi_block
 
-b_phi_block =
+b_H_phi_block =
     [-- k = 1, s = 3/4, A = diag([1 1 0])
      (3/4
      ,(1 :. 0 :. 0 :. ()) :.
@@ -121,15 +121,15 @@ b_phi_block =
 -- @nonl
 -- @-node:gcross.20100505233148.1269:H_phi
 -- @+node:gcross.20100506124738.1280:H_lambda
-b_H_lambda :: Int → Int → OperatorSiteSpecification N3
-b_H_lambda block_start final =
-    zipWith ($) [block_start+i ⇨ final | i <- [0..]]
+b_H_lambda :: OperatorSiteSpecification N3
+b_H_lambda =
+    zipWith ($) [lambda_block_start+i ⇨ final | i <- [0..]]
     .
     map SingleSiteOperator
     $
-    b_lambda_block
+    b_H_lambda_block
 
-b_lambda_block =
+b_H_lambda_block =
     [-- k = 1, B = diag([0 0 1])
         (0 :. 0 :. 0 :. ()) :.
         (0 :. 0 :. 0 :. ()) :.
@@ -183,23 +183,22 @@ b_lambda_block =
 b_operator_tensor = makeOperatorSiteTensorFromSpecification final final $
     [(1 ⇨ 1) identity, (final ⇨ final) identity]
     ++
-    b_H_phi phi_block_start
+    b_H_phi
     ++
-    b_H_lambda lambda_block_start final
--- @nonl
+    b_H_lambda
 -- @-node:gcross.20100505233148.1275:b - 3
 -- @+node:gcross.20100505233148.1276:q - 5
 -- @+others
 -- @+node:gcross.20100505233148.1274:H_phi
-q_H_phi :: Int → Int → OperatorSiteSpecification N5
-q_H_phi block_start final =
-    zipWith ($) [block_start+i ⇨ final | i <- [0..]]
+q_H_phi :: OperatorSiteSpecification N5
+q_H_phi =
+    zipWith ($) [phi_block_start+i ⇨ final | i <- [0..]]
     .
     map SingleSiteOperator
     $
-    q_phi_block
+    q_H_phi_block
 
-q_phi_block =
+q_H_phi_block =
     [-- k = 1, B = diag([1 1 0 0 0])
         (1 :. 0 :. 0 :. 0 :. 0 :. ()) :.
         (0 :. 1 :. 0 :. 0 :. 0 :. ()) :.
@@ -232,18 +231,18 @@ q_phi_block =
 -- @nonl
 -- @-node:gcross.20100505233148.1274:H_phi
 -- @+node:gcross.20100505233148.1277:H_lambda
-q_H_lambda :: Complex Double → Int → OperatorSiteSpecification N5
-q_H_lambda lambda block_start =
-    zipWith ($) [1 ⇨ block_start+i | i <- [0..]]
+q_H_lambda :: Complex Double → OperatorSiteSpecification N5
+q_H_lambda lambda =
+    zipWith ($) [1 ⇨ lambda_block_start+i | i <- [0..]]
     .
     map (
         \(coefficient,matrix) ->
             (coefficient lambda/(1+lambda*lambda)) *: (SingleSiteOperator matrix)
     )
     $
-    q_lambda_block
+    q_H_lambda_block
 
-q_lambda_block =
+q_H_lambda_block =
     [-- k = 1, s = 1, A = diag([0 0 0 0 1])
      (\lambda -> 1
      ,(0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
@@ -328,8 +327,8 @@ q_lambda_block =
     ]
 -- @-node:gcross.20100505233148.1277:H_lambda
 -- @+node:gcross.20100506160128.1281:H_in
-q_H_in :: Int → OperatorSiteSpecification N5
-q_H_in final =
+q_H_in :: OperatorSiteSpecification N5
+q_H_in =
     [-- Hin = diag( [0 1 0 0 0] );
      (1 ⇨ final) . SingleSiteOperator $
         (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
@@ -342,8 +341,8 @@ q_H_in final =
 -- @nonl
 -- @-node:gcross.20100506160128.1281:H_in
 -- @+node:gcross.20100506160128.1287:H_U
-q_H_U :: Int → OperatorSiteSpecification N5
-q_H_U final =
+q_H_U :: OperatorSiteSpecification N5
+q_H_U =
     [-- Hin = kron( [1 -1;-1 1]/2 , eye(2) );  HU(dq,dq) = 0
      (1 ⇨ final) . SingleSiteOperator $
         (  1 :.  0 :.(-1):.  0 :. 0 :. ()) :.
@@ -360,38 +359,36 @@ q_H_U final =
 first_operator_tensor lambda = makeOperatorSiteTensorFromSpecification 1 final $
     [(1 ⇨ 1) identity]
     ++
-    q_H_U final
+    q_H_U
     ++
-    q_H_in final
+    q_H_in
     ++
-    q_H_lambda lambda lambda_block_start
+    q_H_lambda lambda
 
 q_operator_tensor lambda = makeOperatorSiteTensorFromSpecification final final $
     [(1 ⇨ 1) identity, (final ⇨ final) identity]
     ++
-    q_H_U final
+    q_H_U
     ++
-    q_H_phi phi_block_start final
+    q_H_phi
     ++
-    q_H_lambda lambda lambda_block_start
--- @nonl
+    q_H_lambda lambda
 -- @-node:gcross.20100505233148.1276:q - 5
 -- @+node:gcross.20100506160128.1282:end - 2
 last_operator_tensor = makeOperatorSiteTensorFromSpecification final 1 $    
     [(final ⇨ 1) identity]
     ++
-    end_H_phi phi_block_start
--- @nonl
+    end_H_phi
 -- @+node:gcross.20100506160128.1285:H_phi
-end_H_phi :: Int → OperatorSiteSpecification N2
-end_H_phi block_start =
-    zipWith ($) [block_start+i ⇨ 1 | i <- [0..]]
+end_H_phi :: OperatorSiteSpecification N2
+end_H_phi =
+    zipWith ($) [phi_block_start+i ⇨ 1 | i <- [0..]]
     .
     map SingleSiteOperator
     $
-    end_phi_block
+    end_H_phi_block
 
-end_phi_block =
+end_H_phi_block =
     [-- k = 1, B = diag([1 1])
         (1 :. 0 :. ()) :.
         (0 :. 1 :. ()) :.
