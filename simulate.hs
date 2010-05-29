@@ -13,6 +13,7 @@
 -- @+node:gcross.20091120111528.1235:<< Import needed modules >>
 import Acme.Dont
 
+import Control.Exception
 import Control.Monad
 import Control.Monad.Error
 import Control.Monad.Trans
@@ -52,8 +53,21 @@ i = 0 :+ 1
 -- @-node:gcross.20100505233148.1271:i
 -- @-node:gcross.20100505233148.1270:Values
 -- @+node:gcross.20091120111528.1234:Operator tensors
-phi_block_length = 4
-lambda_block_length = 9
+phi_block_length =
+    assert (b_phi_block_length == q_phi_block_length) $
+    assert (b_phi_block_length == end_phi_block_length) $
+    b_phi_block_length
+  where
+    b_phi_block_length = length b_phi_block
+    q_phi_block_length = length q_phi_block
+    end_phi_block_length = length end_phi_block
+
+lambda_block_length =
+    assert (b_lambda_block_length == q_lambda_block_length) $
+    b_lambda_block_length
+  where
+    b_lambda_block_length = length b_lambda_block
+    q_lambda_block_length = length q_lambda_block
 
 phi_block_start = 2
 lambda_block_start = phi_block_start + phi_block_length
@@ -72,6 +86,9 @@ b_H_phi block_start =
             coefficient *: (SingleSiteOperator matrix)
     )
     $
+    b_phi_block
+
+b_phi_block =
     [-- k = 1, s = 3/4, A = diag([1 1 0])
      (3/4
      ,(1 :. 0 :. 0 :. ()) :.
@@ -110,6 +127,9 @@ b_H_lambda block_start final =
     .
     map SingleSiteOperator
     $
+    b_lambda_block
+
+b_lambda_block =
     [-- k = 1, B = diag([0 0 1])
         (0 :. 0 :. 0 :. ()) :.
         (0 :. 0 :. 0 :. ()) :.
@@ -177,6 +197,9 @@ q_H_phi block_start final =
     .
     map SingleSiteOperator
     $
+    q_phi_block
+
+q_phi_block =
     [-- k = 1, B = diag([1 1 0 0 0])
         (1 :. 0 :. 0 :. 0 :. 0 :. ()) :.
         (0 :. 1 :. 0 :. 0 :. 0 :. ()) :.
@@ -215,11 +238,14 @@ q_H_lambda lambda block_start =
     .
     map (
         \(coefficient,matrix) ->
-            (coefficient/(1+lambda_squared)) *: (SingleSiteOperator matrix)
+            (coefficient lambda/(1+lambda*lambda)) *: (SingleSiteOperator matrix)
     )
     $
+    q_lambda_block
+
+q_lambda_block =
     [-- k = 1, s = 1, A = diag([0 0 0 0 1])
-     (1
+     (\lambda -> 1
      ,(0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
       (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
       (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
@@ -228,7 +254,7 @@ q_H_lambda lambda block_start =
                                     ()
      )
     ,-- k = 2, s = L^2/2, A = diag([0 0 0 1 0])
-     (lambda_squared/2
+     (\lambda -> lambda*lambda/2
      ,(0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
       (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
       (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
@@ -237,7 +263,7 @@ q_H_lambda lambda block_start =
                                     ()
      )
     ,-- k = 3, s = L^2/2, A = diag([0 0 1 0 0])
-     (lambda_squared/2
+     (\lambda -> lambda*lambda/2
      ,(0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
       (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
       (0 :. 0 :. 1 :. 0 :. 0 :. ()) :.
@@ -246,7 +272,7 @@ q_H_lambda lambda block_start =
                                     ()
      )
     ,-- k = 4, s = -(L/sqrt(2))/2, A = accumarray({3 5},1,[5,5]) + accumarray({5 3},1,[5,5])
-     (-lambda/(2*sqrt 2)
+     (\lambda -> -lambda/(2*sqrt 2)
      ,(0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
       (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
       (0 :. 0 :. 0 :. 0 :. 1 :. ()) :.
@@ -255,7 +281,7 @@ q_H_lambda lambda block_start =
                                     ()
      )
     ,-- k = 5, s = (L/sqrt(2))/2, A = i*( accumarray({3 5},1,[5,5]) - accumarray({5 3},1,[5,5]) )
-     (lambda/(2*sqrt 2)
+     (\lambda -> lambda/(2*sqrt 2)
      ,(0 :. 0 :.  0 :. 0 :. 0 :. ()) :.
       (0 :. 0 :.  0 :. 0 :. 0 :. ()) :.
       (0 :. 0 :.  0 :. 0 :. i :. ()) :.
@@ -264,7 +290,7 @@ q_H_lambda lambda block_start =
                                      ()
      )
     ,-- k = 6, s = (L/sqrt(2))/2, A = accumarray({4 5},1,[5,5]) + accumarray({5 4},1,[5,5])
-     (lambda/(2*sqrt 2)
+     (\lambda -> lambda/(2*sqrt 2)
      ,(0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
       (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
       (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
@@ -273,7 +299,7 @@ q_H_lambda lambda block_start =
                                     ()
      )
     ,-- k = 7, s = (L/sqrt(2))/2, A = i*( accumarray({4 5},1,[5,5]) - accumarray({5 4},1,[5,5]) )
-     (lambda/(2*sqrt 2)
+     (\lambda -> lambda/(2*sqrt 2)
      ,(0 :. 0 :. 0 :.  0 :. 0 :. ()) :.
       (0 :. 0 :. 0 :.  0 :. 0 :. ()) :.
       (0 :. 0 :. 0 :.  0 :. 0 :. ()) :.
@@ -282,7 +308,7 @@ q_H_lambda lambda block_start =
                                      ()
      )
     ,-- k = 8, s = -(L^2/2)/2, A = accumarray({3 4},1,[5,5]) + accumarray({4 3},1,[5,5])
-     (-lambda_squared/4
+     (\lambda -> -lambda*lambda/4
      ,(0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
       (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
       (0 :. 0 :. 0 :. 1 :. 0 :. ()) :.
@@ -291,7 +317,7 @@ q_H_lambda lambda block_start =
                                     ()
      )
     ,-- k = 9, s = (L^2/2)/2, A = i*( accumarray({3 4},1,[5,5]) - accumarray({4 3},1,[5,5]) )
-     (lambda_squared/4
+     (\lambda -> lambda*lambda/4
      ,(0 :. 0 :.  0 :. 0 :. 0 :. ()) :.
       (0 :. 0 :.  0 :. 0 :. 0 :. ()) :.
       (0 :. 0 :.  0 :. i :. 0 :. ()) :.
@@ -300,8 +326,6 @@ q_H_lambda lambda block_start =
                                      ()
      )
     ]
-  where
-    lambda_squared = lambda*lambda
 -- @-node:gcross.20100505233148.1277:H_lambda
 -- @+node:gcross.20100506160128.1281:H_in
 q_H_in :: Int → OperatorSiteSpecification N5
@@ -365,6 +389,9 @@ end_H_phi block_start =
     .
     map SingleSiteOperator
     $
+    end_phi_block
+
+end_phi_block =
     [-- k = 1, B = diag([1 1])
         (1 :. 0 :. ()) :.
         (0 :. 1 :. ()) :.
