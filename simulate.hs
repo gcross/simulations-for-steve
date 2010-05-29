@@ -65,114 +65,96 @@ final = lambda_block_start + lambda_block_length
 -- @+node:gcross.20100505233148.1269:H_phi
 b_H_phi :: Int → OperatorSiteSpecification N3
 b_H_phi block_start =
-    [-- k = 1
-     (1 ⇨ block_start+0)
-     .
-     -- s = 3/4
-     ( 3/4 *:)
-     .
-     -- A = diag([1 1 0])
-     SingleSiteOperator $
-        (1 :. 0 :. 0 :. ()) :.
-        (0 :. 1 :. 0 :. ()) :.
-        (0 :. 0 :. 0 :. ()) :.
+    zipWith ($) [1 ⇨ block_start+i | i <- [0..]]
+    .
+    map (
+        \(coefficient,matrix) ->
+            coefficient *: (SingleSiteOperator matrix)
+    )
+    $
+    [-- k = 1, s = 3/4, A = diag([1 1 0])
+     (3/4
+     ,(1 :. 0 :. 0 :. ()) :.
+      (0 :. 1 :. 0 :. ()) :.
+      (0 :. 0 :. 0 :. ()) :.
+                          ()
+     )
+    ,-- k = 2, s = 1/4, A = diag([1 -1 0])
+     (1/4
+     ,(1 :.   0  :. 0 :. ()) :.
+      (0 :. (-1) :. 0 :. ()) :.
+      (0 :.   0  :. 0 :. ()) :.
+                             ()
+     )
+    ,-- k = 3, s = 1/4, A = accumarray({2 1},1,[3 3]) + accumarray({1 2},1,[3 3])
+     (1/4
+     ,(0 :. 1 :. 0 :. ()) :.
+      (1 :. 0 :. 0 :. ()) :.
+      (0 :. 0 :. 0 :. ()) :.
+                          ()
+     )
+    ,-- k = 4, s = -1/4, A = i*( accumarray({1 2},1,[3 3]) - accumarray({2 1},1,[3 3]) )
+     (-1/4
+     ,(  0 :. i :. 0 :. ()) :.
+      ((-i):. 0 :. 0 :. ()) :.
+      (  0 :. 0 :. 0 :. ()) :.
                             ()
-    ,-- k = 2
-     (1 ⇨ block_start+1)
-     .
-     -- s = 1/4
-     ( 1/4 *:)
-     .
-     -- A = diag([1 -1 0])
-     SingleSiteOperator $
-        (1 :.   0  :. 0 :. ()) :.
-        (0 :. (-1) :. 0 :. ()) :.
-        (0 :.   0  :. 0 :. ()) :.
-                              ()
-    ,-- k = 3
-     (1 ⇨ block_start+2)
-     .
-     -- s = 1/4
-     ( 1/4 *:)
-     .
-     -- A = accumarray({2 1},1,[3 3]) + accumarray({1 2},1,[3 3])
-     SingleSiteOperator $
-        (0 :. 1 :. 0 :. ()) :.
-        (1 :. 0 :. 0 :. ()) :.
-        (0 :. 0 :. 0 :. ()) :.
-                            ()
-    ,-- k = 4
-     (1 ⇨ block_start+3)
-     .
-     -- s = -1/4
-     (-1/4 *:)
-     .
-     -- A = i*( accumarray({1 2},1,[3 3]) - accumarray({2 1},1,[3 3]) )
-     SingleSiteOperator $
-        (  0 :. i :. 0 :. ()) :.
-        ((-i):. 0 :. 0 :. ()) :.
-        (  0 :. 0 :. 0 :. ()) :.
-                               ()
+     )
     ]
 -- @nonl
 -- @-node:gcross.20100505233148.1269:H_phi
 -- @+node:gcross.20100506124738.1280:H_lambda
 b_H_lambda :: Int → Int → OperatorSiteSpecification N3
 b_H_lambda block_start final =
+    zipWith ($) [block_start+i ⇨ final | i <- [0..]]
+    .
+    map SingleSiteOperator
+    $
     [-- k = 1, B = diag([0 0 1])
-     (block_start+0 ⇨ final) . SingleSiteOperator $
         (0 :. 0 :. 0 :. ()) :.
         (0 :. 0 :. 0 :. ()) :.
         (0 :. 0 :. 1 :. ()) :.
                             ()
     ,-- k = 2, B = diag([1 0 0])
-     (block_start+1 ⇨ final) . SingleSiteOperator $
         (1 :. 0 :. 0 :. ()) :.
         (0 :. 0 :. 0 :. ()) :.
         (0 :. 0 :. 0 :. ()) :.
                             ()
     ,-- k = 3, B = diag([0 1 0])
-     (block_start+2 ⇨ final) . SingleSiteOperator $
         (0 :. 0 :. 0 :. ()) :.
         (0 :. 1 :. 0 :. ()) :.
         (0 :. 0 :. 0 :. ()) :.
                             ()
     ,-- k = 4, B = accumarray({2 3},1,[3,3]) + accumarray({3 2},1,[3,3])
-     (block_start+3 ⇨ final) . SingleSiteOperator $
         (0 :. 0 :. 0 :. ()) :.
         (0 :. 0 :. 1 :. ()) :.
         (0 :. 1 :. 0 :. ()) :.
                             ()
     ,-- k = 5, B = i*( accumarray({2 3},1,[3,3]) - accumarray({3 2},1,[3,3]) )
-     (block_start+4 ⇨ final) . SingleSiteOperator $
         (0 :.  0 :. 0 :. ()) :.
         (0 :.  0 :. i :. ()) :.
         (0 :.(-i):. 0 :. ()) :.
                              ()
     ,-- k = 6, B = accumarray({3 1},1,[3,3]) + accumarray({1 3},1,[3,3])
-     (block_start+5 ⇨ final) . SingleSiteOperator $
         (0 :. 0 :. 1 :. ()) :.
         (0 :. 0 :. 0 :. ()) :.
         (1 :. 0 :. 0 :. ()) :.
                             ()
     ,-- k = 7, B = i*( accumarray({3 1},1,[3,3]) - accumarray({1 3},1,[3,3]) )
-     (block_start+6 ⇨ final) . SingleSiteOperator $
         (0 :. 0 :.(-i):. ()) :.
         (0 :. 0 :.  0 :. ()) :.
         (i :. 0 :.  0 :. ()) :.
                              ()
     ,-- k = 8, B = accumarray({2 1},1,[3,3]) + accumarray({1 2},1,[3,3])
-     (block_start+7 ⇨ final) . SingleSiteOperator $
         (0 :. 1 :. 0 :. ()) :.
         (1 :. 0 :. 0 :. ()) :.
         (0 :. 0 :. 0 :. ()) :.
                             ()
     ,-- k = 9, B = i*( accumarray({2 1},1,[3,3]) - accumarray({1 2},1,[3,3]) )
-     (block_start+8 ⇨ final) . SingleSiteOperator $
         (0 :.(-i):. 0 :. ()) :.
         (i :.  0 :. 0 :. ()) :.
         (0 :.  0 :. 0 :. ()) :.
-                            ()
+                             ()
     ]
 -- @nonl
 -- @-node:gcross.20100506124738.1280:H_lambda
@@ -191,16 +173,18 @@ b_operator_tensor = makeOperatorSiteTensorFromSpecification final final $
 -- @+node:gcross.20100505233148.1274:H_phi
 q_H_phi :: Int → Int → OperatorSiteSpecification N5
 q_H_phi block_start final =
+    zipWith ($) [block_start+i ⇨ final | i <- [0..]]
+    .
+    map SingleSiteOperator
+    $
     [-- k = 1, B = diag([1 1 0 0 0])
-     (block_start+0 ⇨ final) . SingleSiteOperator $
         (1 :. 0 :. 0 :. 0 :. 0 :. ()) :.
         (0 :. 1 :. 0 :. 0 :. 0 :. ()) :.
         (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
         (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
         (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
                                       ()
-    ,-- k = 2, B = diag([1 -1 0 0 0])
-     (block_start+1 ⇨ final) . SingleSiteOperator $
+     ,-- k = 2, B = diag([1 -1 0 0 0])
         (1 :.  0 :. 0 :. 0 :. 0 :. ()) :.
         (0 :.(-1):. 0 :. 0 :. 0 :. ()) :.
         (0 :.  0 :. 0 :. 0 :. 0 :. ()) :.
@@ -208,7 +192,6 @@ q_H_phi block_start final =
         (0 :.  0 :. 0 :. 0 :. 0 :. ()) :.
                                          ()
     ,-- k = 3, B = accumarray({1 2},1,[5 5]) + accumarray({2 1},1,[5 5])
-     (block_start+2 ⇨ final) . SingleSiteOperator $
         (0 :. 1 :. 0 :. 0 :. 0 :. ()) :.
         (1 :. 0 :. 0 :. 0 :. 0 :. ()) :.
         (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
@@ -216,7 +199,6 @@ q_H_phi block_start final =
         (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
                                       ()
     ,-- k = 4, B = i*( accumarray({2 1},1,[5 5]) - accumarray({1 2},1,[5 5]) )
-     (block_start+3 ⇨ final) . SingleSiteOperator $
         (0 :.(-i):. 0 :. 0 :. 0 :. ()) :.
         (i :.  0 :. 0 :. 0 :. 0 :. ()) :.
         (0 :.  0 :. 0 :. 0 :. 0 :. ()) :.
@@ -229,152 +211,97 @@ q_H_phi block_start final =
 -- @+node:gcross.20100505233148.1277:H_lambda
 q_H_lambda :: Complex Double → Int → OperatorSiteSpecification N5
 q_H_lambda lambda block_start =
-    [-- k = 1
-     (1 ⇨ block_start+0)
-     .
-     times_common_factor
-     .
-     -- A = diag([0 0 0 0 1])
-     SingleSiteOperator $
-        (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
-        (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
-        (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
-        (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
-        (0 :. 0 :. 0 :. 0 :. 1 :. ()) :.
-                                      ()
-    ,-- k = 2
-     (1 ⇨ block_start+1)
-     .
-     times_common_factor
-     .
-     -- s = L^2/2
-     (lambda_squared/2 *:)
-     .
-     -- A = diag([0 0 0 1 0])
-     SingleSiteOperator $
-        (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
-        (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
-        (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
-        (0 :. 0 :. 0 :. 1 :. 0 :. ()) :.
-        (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
-                                      ()
-    ,-- k = 3
-     (1 ⇨ block_start+2)
-     .
-     times_common_factor
-     .
-     -- s = L^2/2
-     (lambda_squared/2 *:)
-     .
-     -- A = diag([0 0 1 0 0])
-     SingleSiteOperator $
-        (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
-        (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
-        (0 :. 0 :. 1 :. 0 :. 0 :. ()) :.
-        (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
-        (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
-                                      ()
-    ,-- k = 4
-     (1 ⇨ block_start+3)
-     .
-     times_common_factor
-     .
-     -- s = -(L/sqrt(2))/2
-     (-lambda/(2*sqrt 2) *:)
-     .
-     -- A = accumarray({3 5},1,[5,5]) + accumarray({5 3},1,[5,5])
-     SingleSiteOperator $
-        (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
-        (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
-        (0 :. 0 :. 0 :. 0 :. 1 :. ()) :.
-        (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
-        (0 :. 0 :. 1 :. 0 :. 0 :. ()) :.
-                                      ()
-    ,-- k = 5
-     (1 ⇨ block_start+4)
-     .
-     times_common_factor
-     .
-     -- s = (L/sqrt(2))/2
-     (lambda/(2*sqrt 2) *:)
-     .
-     -- A = i*( accumarray({3 5},1,[5,5]) - accumarray({5 3},1,[5,5]) )
-     SingleSiteOperator $
-        (0 :. 0 :.  0 :. 0 :. 0 :. ()) :.
-        (0 :. 0 :.  0 :. 0 :. 0 :. ()) :.
-        (0 :. 0 :.  0 :. 0 :. i :. ()) :.
-        (0 :. 0 :.  0 :. 0 :. 0 :. ()) :.
-        (0 :. 0 :.(-i):. 0 :. 0 :. ()) :.
-                                        ()
-    ,-- k = 6
-     (1 ⇨ block_start+5)
-     .
-     times_common_factor
-     .
-     -- s = (L/sqrt(2))/2
-     (lambda/(2*sqrt 2) *:)
-     .
-     -- A = accumarray({4 5},1,[5,5]) + accumarray({5 4},1,[5,5])
-     SingleSiteOperator $
-        (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
-        (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
-        (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
-        (0 :. 0 :. 0 :. 0 :. 1 :. ()) :.
-        (0 :. 0 :. 0 :. 1 :. 0 :. ()) :.
-                                      ()
-    ,-- k = 7
-     (1 ⇨ block_start+6)
-     .
-     times_common_factor
-     .
-     -- s = (L/sqrt(2))/2
-     (lambda/(2*sqrt 2) *:)
-     .
-     -- i*( accumarray({4 5},1,[5,5]) - accumarray({5 4},1,[5,5]) )
-     SingleSiteOperator $
-        (0 :. 0 :. 0 :.  0 :. 0 :. ()) :.
-        (0 :. 0 :. 0 :.  0 :. 0 :. ()) :.
-        (0 :. 0 :. 0 :.  0 :. 0 :. ()) :.
-        (0 :. 0 :. 0 :.  0 :. i :. ()) :.
-        (0 :. 0 :. 0 :.(-i):. 0 :. ()) :.
-                                       ()
-    ,-- k = 8
-     (1 ⇨ block_start+7)
-     .
-     times_common_factor
-     .
-     -- s = -(L^2/2)/2
-     (-lambda_squared/4 *:)
-     .
-     -- A = accumarray({3 4},1,[5,5]) + accumarray({4 3},1,[5,5])
-     SingleSiteOperator $
-        (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
-        (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
-        (0 :. 0 :. 0 :. 1 :. 0 :. ()) :.
-        (0 :. 0 :. 1 :. 0 :. 0 :. ()) :.
-        (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
-                                      ()
-    ,-- k = 9
-     (1 ⇨ block_start+8)
-     .
-     times_common_factor
-     .
-     -- s = (L^2/2)/2
-     (lambda_squared/4 *:)
-     .
-     -- A = i*( accumarray({3 4},1,[5,5]) - accumarray({4 3},1,[5,5]) );
-     SingleSiteOperator $
-        (0 :. 0 :.  0 :. 0 :. 0 :. ()) :.
-        (0 :. 0 :.  0 :. 0 :. 0 :. ()) :.
-        (0 :. 0 :.  0 :. i :. 0 :. ()) :.
-        (0 :. 0 :.(-i):. 0 :. 0 :. ()) :.
-        (0 :. 0 :.  0 :. 0 :. 0 :. ()) :.
-                                       ()
+    zipWith ($) [1 ⇨ block_start+i | i <- [0..]]
+    .
+    map (
+        \(coefficient,matrix) ->
+            (coefficient/(1+lambda_squared)) *: (SingleSiteOperator matrix)
+    )
+    $
+    [-- k = 1, s = 1, A = diag([0 0 0 0 1])
+     (1
+     ,(0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
+      (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
+      (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
+      (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
+      (0 :. 0 :. 0 :. 0 :. 1 :. ()) :.
+                                    ()
+     )
+    ,-- k = 2, s = L^2/2, A = diag([0 0 0 1 0])
+     (lambda_squared/2
+     ,(0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
+      (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
+      (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
+      (0 :. 0 :. 0 :. 1 :. 0 :. ()) :.
+      (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
+                                    ()
+     )
+    ,-- k = 3, s = L^2/2, A = diag([0 0 1 0 0])
+     (lambda_squared/2
+     ,(0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
+      (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
+      (0 :. 0 :. 1 :. 0 :. 0 :. ()) :.
+      (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
+      (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
+                                    ()
+     )
+    ,-- k = 4, s = -(L/sqrt(2))/2, A = accumarray({3 5},1,[5,5]) + accumarray({5 3},1,[5,5])
+     (-lambda/(2*sqrt 2)
+     ,(0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
+      (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
+      (0 :. 0 :. 0 :. 0 :. 1 :. ()) :.
+      (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
+      (0 :. 0 :. 1 :. 0 :. 0 :. ()) :.
+                                    ()
+     )
+    ,-- k = 5, s = (L/sqrt(2))/2, A = i*( accumarray({3 5},1,[5,5]) - accumarray({5 3},1,[5,5]) )
+     (lambda/(2*sqrt 2)
+     ,(0 :. 0 :.  0 :. 0 :. 0 :. ()) :.
+      (0 :. 0 :.  0 :. 0 :. 0 :. ()) :.
+      (0 :. 0 :.  0 :. 0 :. i :. ()) :.
+      (0 :. 0 :.  0 :. 0 :. 0 :. ()) :.
+      (0 :. 0 :.(-i):. 0 :. 0 :. ()) :.
+                                     ()
+     )
+    ,-- k = 6, s = (L/sqrt(2))/2, A = accumarray({4 5},1,[5,5]) + accumarray({5 4},1,[5,5])
+     (lambda/(2*sqrt 2)
+     ,(0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
+      (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
+      (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
+      (0 :. 0 :. 0 :. 0 :. 1 :. ()) :.
+      (0 :. 0 :. 0 :. 1 :. 0 :. ()) :.
+                                    ()
+     )
+    ,-- k = 7, s = (L/sqrt(2))/2, A = i*( accumarray({4 5},1,[5,5]) - accumarray({5 4},1,[5,5]) )
+     (lambda/(2*sqrt 2)
+     ,(0 :. 0 :. 0 :.  0 :. 0 :. ()) :.
+      (0 :. 0 :. 0 :.  0 :. 0 :. ()) :.
+      (0 :. 0 :. 0 :.  0 :. 0 :. ()) :.
+      (0 :. 0 :. 0 :.  0 :. i :. ()) :.
+      (0 :. 0 :. 0 :.(-i):. 0 :. ()) :.
+                                     ()
+     )
+    ,-- k = 8, s = -(L^2/2)/2, A = accumarray({3 4},1,[5,5]) + accumarray({4 3},1,[5,5])
+     (-lambda_squared/4
+     ,(0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
+      (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
+      (0 :. 0 :. 0 :. 1 :. 0 :. ()) :.
+      (0 :. 0 :. 1 :. 0 :. 0 :. ()) :.
+      (0 :. 0 :. 0 :. 0 :. 0 :. ()) :.
+                                    ()
+     )
+    ,-- k = 9, s = (L^2/2)/2, A = i*( accumarray({3 4},1,[5,5]) - accumarray({4 3},1,[5,5]) )
+     (lambda_squared/4
+     ,(0 :. 0 :.  0 :. 0 :. 0 :. ()) :.
+      (0 :. 0 :.  0 :. 0 :. 0 :. ()) :.
+      (0 :. 0 :.  0 :. i :. 0 :. ()) :.
+      (0 :. 0 :.(-i):. 0 :. 0 :. ()) :.
+      (0 :. 0 :.  0 :. 0 :. 0 :. ()) :.
+                                     ()
+     )
     ]
   where
     lambda_squared = lambda*lambda
-    times_common_factor = (1/(1+lambda_squared) *:)
--- @nonl
 -- @-node:gcross.20100505233148.1277:H_lambda
 -- @+node:gcross.20100506160128.1281:H_in
 q_H_in :: Int → OperatorSiteSpecification N5
@@ -434,28 +361,27 @@ last_operator_tensor = makeOperatorSiteTensorFromSpecification final 1 $
 -- @+node:gcross.20100506160128.1285:H_phi
 end_H_phi :: Int → OperatorSiteSpecification N2
 end_H_phi block_start =
+    zipWith ($) [block_start+i ⇨ 1 | i <- [0..]]
+    .
+    map SingleSiteOperator
+    $
     [-- k = 1, B = diag([1 1])
-     (block_start+0 ⇨ 1) . SingleSiteOperator $
         (1 :. 0 :. ()) :.
         (0 :. 1 :. ()) :.
                        ()
     ,-- k = 2, B = diag([1 -1)
-     (block_start+1 ⇨ 1) . SingleSiteOperator $
         (1 :.  0 :. ()) :.
         (0 :.(-1):. ()) :.
                           ()
     ,-- k = 3, B = accumarray({1 2},1,[2 2]) + accumarray({2 1},1,[2 2])
-     (block_start+2 ⇨ 1) . SingleSiteOperator $
         (0 :. 1 :. ()) :.
         (1 :. 0 :. ()) :.
                        ()
     ,-- k = 4, B = i*( accumarray({2 1},1,[2 2]) - accumarray({1 2},1,[2 2]) )
-     (block_start+3 ⇨ 1) . SingleSiteOperator $
         (0 :.(-i):. ()) :.
         (i :.  0 :. ()) :.
                         ()
     ]
--- @nonl
 -- @-node:gcross.20100506160128.1285:H_phi
 -- @-node:gcross.20100506160128.1282:end - 2
 -- @-others
@@ -548,7 +474,7 @@ main = do
             multisweep_energy_change_convergence_criterion
             eigensolver_tolerance
             maximum_allowed_eigensolver_iterations
-            3
+            2
             []
     -- @-node:gcross.20091202133456.1303:<< Run simulation >>
     -- @nl
