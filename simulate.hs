@@ -344,7 +344,7 @@ q_H_in =
 q_H_U :: OperatorSiteSpecification N5
 q_H_U =
     [-- Hin = kron( [1 -1;-1 1]/2 , eye(2) );  HU(dq,dq) = 0
-     (1 ⇨ final) . SingleSiteOperator $
+     (1 ⇨ final) . (1/2 *:) . SingleSiteOperator $
         (  1 :.  0 :.(-1):.  0 :. 0 :. ()) :.
         (  0 :.  1 :.  0 :.(-1):. 0 :. ()) :.
         ((-1):.  0 :.  1 :.  0 :. 0 :. ()) :.
