@@ -12,6 +12,7 @@
 <v t="gcross.20100505233148.1259"><vh>@chapters</vh></v>
 <v t="gcross.20100505233148.1260"><vh>@thin simulate.hs</vh></v>
 <v t="gcross.20100528163103.2461"><vh>@thin simulate-phi.hs</vh></v>
+<v t="gcross.20100528235053.1304"><vh>@thin directly-simulate.py</vh></v>
 </vnodes>
 <tnodes>
 <t tx="gcross.20100505233148.1259"></t>
