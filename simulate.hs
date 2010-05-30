@@ -22,9 +22,11 @@ import Data.Complex
 import Data.ConfigFile
 import Data.Int
 import Data.IORef
-import Data.UUID
 import Data.Vec ((:.)(..))
 import Data.Vec.Nat
+
+import Database.Enumerator
+import Database.PostgreSQL.Enumerator
 
 import System.Environment
 import System.Posix.Clock
@@ -459,23 +461,58 @@ analyzeTrialEnergies tolerance best_energy trial_energy
 -- @-node:gcross.20091120111528.1237:analyzeTrialEnergies
 -- @+node:gcross.20091120111528.1236:main
 main = do
+    -- @    << Process command-line arguments >>
+    -- @+node:gcross.20100530003420.1949:<< Process command-line arguments >>
     args ← getArgs
 
-    let lambda = (:+ 0) . read $ args !! 0
-        number_of_middle_qb_pairs = read $ args !! 1
-        operator_site_tensors = makeModelOperatorSiteTensors lambda number_of_middle_qb_pairs
+    unless (length args == 2) $ do
+        program_name <- getProgName
+        printf "Usage: %s <lambda> <number of sites>" program_name
+        exitFailure
+
+    let number_of_sites = read $ args !! 1
+
+    unless (number_of_sites >= 3 && number_of_sites `mod` 2 == 1) $ do
+        putStrLn "The number of sites must be an odd integer >= 3."
+        exitFailure
+
+    let lambda_as_string = args !! 0
+        lambda = (:+ 0) . read $ lambda_as_string
+        number_of_middle_qb_pairs = (number_of_sites-3) `div` 2
+    -- @-node:gcross.20100530003420.1949:<< Process command-line arguments >>
+    -- @nl
+
+    connection <- makeConnection "steve"
+
+    -- @    << Check whether this point has been sampled before >>
+    -- @+node:gcross.20100530003420.1950:<< Check whether this point has been sampled before >>
+    (result,connection) <-
+        withContinuedSession connection $
+            doQuery
+                (sqlbind "select 1 from simulations where lambda=(?::numeric) and number_of_sites=?;"
+                         [bindP lambda_as_string,bindP number_of_sites]
+                )
+                get1
+                (Nothing :: Maybe Int)
+
+    unless (result == Nothing) $ do
+        putStrLn "This data point has already been sampled."
+        exitFailure
+    -- @-node:gcross.20100530003420.1950:<< Check whether this point has been sampled before >>
+    -- @nl
+
+    let operator_site_tensors = makeModelOperatorSiteTensors lambda number_of_middle_qb_pairs
         bandwidth_increment = 2
         initial_bandwidth = 2
         bandwidth_increase_energy_change_convergence_criterion = 1e-4
         multisweep_energy_change_convergence_criterion = 1e-4
-        level_similarity_tolerance = 1e-3
-        eigensolver_tolerance = 1e-10
+        eigensolver_tolerance = 0
         maximum_allowed_eigensolver_iterations = 1000
 
     putStrLn $
         printf "Running simulation for lambda = %s with %i sites..."
             (show . realPart $ lambda)
-            (2*number_of_middle_qb_pairs+3)
+            number_of_sites
 
     -- @    << Define callbacks >>
     -- @+node:gcross.20091205211300.1710:<< Define callbacks >>
@@ -546,7 +583,28 @@ main = do
     TimeSpec time_in_seconds _ ← getTime ProcessCPUTime
 
     putStrLn $ "The elapsed CPU time for this run was " ++ show time_in_seconds ++ " seconds."
--- @nonl
+
+    -- @    << Store in database >>
+    -- @+node:gcross.20100530003420.1948:<< Store in database >>
+    number_of_rows_inserted <- withSession connection $ execDML
+        (cmdbind "insert into simulations (lambda, number_of_sites, energy_gap, multisweep_convergence_criterion, bandwidth_increase_convergence_criterion, running_time) values (?::numeric,?,?,?::numeric,?::numeric,?::interval);"
+             [bindP lambda_as_string
+             ,bindP number_of_sites
+             ,bindP energy_gap
+             ,bindP (show multisweep_energy_change_convergence_criterion)
+             ,bindP (show bandwidth_increase_energy_change_convergence_criterion)
+             ,bindP (show time_in_seconds ++ " seconds")
+             ]
+        )
+
+    if number_of_rows_inserted == 1
+        then putStrLn "Result stored in the database."
+        else putStrLn $
+                "Error adding the solution to the database. ("
+                ++ show number_of_rows_inserted ++
+                " rows inserted.)"
+    -- @-node:gcross.20100530003420.1948:<< Store in database >>
+    -- @nl
 -- @-node:gcross.20091120111528.1236:main
 -- @-others
 -- @-node:gcross.20100505233148.1260:@thin simulate.hs
