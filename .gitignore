@@ -1,0 +1,6 @@
+connection.cfg
+*.o
+*.hi
+simulate
+*~
+*#
