@@ -13,7 +13,7 @@ except ValueError:
     print "Usage: %s [lambda] [number of middle 5-3 clusters]" % sys.argv[0]
     sys.exit()
 
-if n > 1:
+if n > 2:
     print "Program override:  %i is too big of a value for n, idiot." % n
     sys.exit()
 
@@ -117,13 +117,16 @@ H_Lambda = sum(operators(
     )   for i in xrange(n+1)
     )
 
-print H_in.shape, H_U.shape, H_Phi.shape, H_Lambda.shape
-
 H = H_in+H_U+H_Phi+H_Lambda
 #@-node:gcross.20100528235053.1317:Hamiltonian
 #@-others
 
-evals, evecs = eigh(H)
-print evals[:10]
+#evals, evecs = eigh(H)
+from scipy.sparse.linalg.eigen.arpack.speigs import ARPACK_eigs
+def matvec(x):
+    return dot(H,x)
+evals, evecs = ARPACK_eigs(matvec,H.shape[0],2)
+for eval in evals[:2]:
+    print eval
 #@-node:gcross.20100528235053.1304:@thin directly-simulate.py
 #@-leo
