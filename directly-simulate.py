@@ -8,13 +8,26 @@ import sys
 
 try:
     lam = float(sys.argv[1])
-    n = int(sys.argv[2])
-except ValueError:
-    print "Usage: %s [lambda] [number of middle 5-3 clusters]" % sys.argv[0]
+    number_of_sites = int(sys.argv[2])
+except:
+    print "Usage: %s <lambda> <number of sites> [number of levels]" % sys.argv[0]
     sys.exit()
 
+try:
+    number_of_levels = int(sys.argv[3])
+except IndexError:
+    number_of_levels = 2
+except ValueError:
+    print "Usage: %s <lambda> <number of sites> [number of levels]" % sys.argv[0]
+    sys.exit()
+
+if number_of_sites < 3 or number_of_sites % 2 == 0:
+    print "The number of sites must be an odd integer >= 3."
+
+n = (number_of_sites - 3) // 2
+
 if n > 2:
-    print "Program override:  %i is too big of a value for n, idiot." % n
+    print "Program override:  %i is too big of a value for the number of sites, idiot." % number_of_sites
     sys.exit()
 
 #@+others
@@ -121,12 +134,11 @@ H = H_in+H_U+H_Phi+H_Lambda
 #@-node:gcross.20100528235053.1317:Hamiltonian
 #@-others
 
-#evals, evecs = eigh(H)
 from scipy.sparse.linalg.eigen.arpack.speigs import ARPACK_eigs
 def matvec(x):
     return dot(H,x)
-evals, evecs = ARPACK_eigs(matvec,H.shape[0],2)
-for eval in evals[:2]:
+evals, evecs = ARPACK_eigs(matvec,H.shape[0],number_of_levels,which='SR')
+for eval in evals:
     print eval
 #@-node:gcross.20100528235053.1304:@thin directly-simulate.py
 #@-leo
