@@ -12,6 +12,7 @@
 <v t="gcross.20100505233148.1259"><vh>@chapters</vh></v>
 <v t="gcross.20100505233148.1260"><vh>@thin simulate.hs</vh></v>
 <v t="gcross.20100530003420.1952"><vh>@thin plot-gap-versus-lambda.hs</vh></v>
+<v t="gcross.20100530102143.1305"><vh>@thin plot-gap-versus-number-of-sites.hs</vh></v>
 <v t="gcross.20100528235053.1304"><vh>@thin directly-simulate.py</vh></v>
 </vnodes>
 <tnodes>
