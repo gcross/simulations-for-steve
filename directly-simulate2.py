@@ -23,6 +23,7 @@ except ValueError:
 
 if number_of_sites < 3 or number_of_sites % 2 == 0:
     print "The number of sites must be an odd integer >= 3."
+    sys.exit()
 
 n = (number_of_sites - 3) // 2
 
