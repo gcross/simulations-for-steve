@@ -37,19 +37,32 @@ def operators(*ops):
 #@+node:gcross.20100612231244.1384:svd_decompose
 def svd_decompose(O,d1,d2):
     U,S,V = svd(O.reshape(d1,d2,d1,d2).transpose(0,2,1,3).reshape(d1*d1,d2*d2))
+    U = U.transpose().reshape(d1*d1,d1,d1)
+    V = V.reshape(d2*d2,d2,d2)
     d = 0
     while (d < len(S) and abs(S[d]) > 1e-10):
         d += 1
+    U = U[:d]
+    V = V[:d]
+    S = S[:d]
+    VS = V*S.reshape(d,1,1)
     print "U="
-    print_matrices(U[:d]*S[:d].reshape(d,1))
-    V = V.transpose()
+    print_matrices(U)
     print "V="
-    print_matrices(V[:d]*S[:d].reshape(d,1))
+    print_matrices(VS)
+    M = recombine(U,VS,d1*d2)
+    assert allclose(M,O)
 #@-node:gcross.20100612231244.1384:svd_decompose
+#@+node:gcross.20100707155745.1405:recombine
+def recombine(U,V,d):
+    M = zeros((d,d),complex128)
+    for u, v in zip(U,V):
+        M += otimes(u,v)
+    return M
+#@-node:gcross.20100707155745.1405:recombine
 #@+node:gcross.20100612231244.1385:print_matrices
 def print_matrices(matrices):
-    d = int(sqrt(matrices.shape[1]))
-    matrices = matrices.reshape(matrices.shape[0],d,d)
+    d = matrices.shape[1]
     indent = "    ["
     for m in matrices:
         for i in xrange(d):
@@ -57,6 +70,7 @@ def print_matrices(matrices):
             indent = "     "
         print "     ()"
         indent = "    ,"
+    print "    ]"
 #@-node:gcross.20100612231244.1385:print_matrices
 #@-node:gcross.20100612231244.1340:Utility functions
 #@+node:gcross.20100612231244.1345:Single site objects
@@ -107,19 +121,86 @@ terms = \
     ]
 for i, j, value in terms:
     _32_H_Phi[i-1,j-1] = value
-svd_decompose(_32_H_Phi,3,2)
+#print "Decomposing 3 x 2 Phi..."
+#svd_decompose(_32_H_Phi,3,2)
 #@-node:gcross.20100612231244.1350:bq, d = 3x2
 #@+node:gcross.20100612231244.1351:bq, d = 3x5
 _35_USing = projector(vtimes(_3_0,_5_U1)-vtimes(_3_1,_5_U0))/2
 _35_H_Phi = otimes(diag([1,1,0]),projector(_5_U0)+projector(_5_U1))-_35_USing
+#print "Decomposing 3 x 5 Phi..."
+#svd_decompose(_35_H_Phi,3,5)
 #@-node:gcross.20100612231244.1351:bq, d = 3x5
 #@+node:gcross.20100612231244.1352:qb, d = 5x3
 _53_H_idle = otimes(diag([1,1,1,1,0]),diag([0,0,1])) + otimes(diag([0,0,0,0,1]),diag([1,1,0]))
 
 _53_USing = 1/sqrt(2) * (vtimes(_5_U1,_3_0) - vtimes(_5_U0,_3_1))
 _53_Lambda = 1/sqrt(1+lam**2)*(lam*_53_USing + vtimes(_5_I,_3_I))
-
 _53_H_L = projector(_53_Lambda) + _53_H_idle
+
+A1U = 1/sqrt(2) * _5_U1
+B1U = -1/sqrt(2) * _5_U0
+C0U = _5_I
+
+A1V = _3_0
+B1V = _3_1
+C0V = _3_I
+
+L0 = 1/(1+lam**2)
+L1 = lam/(1+lam**2)
+L2 = lam**2/(1+lam**2)
+
+LU = array([
+    diag([1,1,1,1,0]),
+    diag([0,0,0,0,1]),
+    outer(A1U,A1U),
+    outer(A1U,B1U),
+    outer(A1U,C0U),
+    outer(B1U,A1U),
+    outer(B1U,B1U),
+    outer(B1U,C0U),
+    outer(C0U,A1U),
+    outer(C0U,B1U),
+    outer(C0U,C0U),
+])
+
+LS = array([
+    1,
+    1,
+    L2,
+    L2,
+    L1,
+    L2,
+    L2,
+    L1,
+    L1,
+    L1,
+    L0,
+])
+
+LV = array([
+    diag([0,0,1]),
+    diag([1,1,0]),
+    outer(A1V,A1V),
+    outer(A1V,B1V),
+    outer(A1V,C0V),
+    outer(B1V,A1V),
+    outer(B1V,B1V),
+    outer(B1V,C0V),
+    outer(C0V,A1V),
+    outer(C0V,B1V),
+    outer(C0V,C0V),
+])
+
+print "Decomposing Lambda..."
+print "U ="
+print_matrices(LU)
+print "V ="
+print_matrices(LV)
+
+LVS = LV*LS.reshape(11,1,1)
+
+recombined_53_H_L = recombine(LU,LVS,15)
+assert allclose(recombined_53_H_L,_53_H_L)
 #@-node:gcross.20100612231244.1352:qb, d = 5x3
 #@-node:gcross.20100612231244.1349:Two-site objects
 #@-others

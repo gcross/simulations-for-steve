@@ -37,14 +37,18 @@ def operators(*ops):
 #@+node:gcross.20100612231244.1433:svd_decompose
 def svd_decompose(O,d1,d2):
     U,S,V = svd(O.reshape(d1,d2,d1,d2).transpose(0,2,1,3).reshape(d1*d1,d2*d2))
+    U = U.transpose()
     d = 0
     while (d < len(S) and abs(S[d]) > 1e-10):
         d += 1
     print "U="
     print_matrices(U[:d]*S[:d].reshape(d,1))
-    V = V.transpose()
     print "V="
-    print_matrices(V[:d]*S[:d].reshape(d,1))
+    print_matrices(V[:d])
+    M = O*0
+    for i in xrange(d):
+        M += S[i]*otimes(U[i].reshape(d1,d1),V[i].reshape(d2,d2))
+    print allclose(M,O)
 #@-node:gcross.20100612231244.1433:svd_decompose
 #@+node:gcross.20100612231244.1435:print_matrices
 def print_matrices(matrices):

@@ -486,18 +486,22 @@ main = do
 
     -- @    << Check whether this point has been sampled before >>
     -- @+node:gcross.20100530003420.1950:<< Check whether this point has been sampled before >>
-    (result,connection) <-
-        withContinuedSession connection $
-            doQuery
-                (sqlbind "select 1 from simulations where lambda=(?::numeric) and number_of_sites=?;"
-                         [bindP lambda_as_string,bindP number_of_sites]
-                )
-                get1
-                (Nothing :: Maybe Int)
-
-    unless (result == Nothing) $ do
-        putStrLn "This data point has already been sampled."
-        exitFailure
+    -- @+at
+    --  (result,connection) <-
+    --      withContinuedSession connection $
+    --          doQuery
+    --              (sqlbind "select 1 from simulations where 
+    --  lambda=(?::numeric) and number_of_sites=?;"
+    --                       [bindP lambda_as_string,bindP number_of_sites]
+    --              )
+    --              get1
+    --              (Nothing :: Maybe Int)
+    --  
+    --  unless (result == Nothing) $ do
+    --      putStrLn "This data point has already been sampled."
+    --      exitFailure
+    -- @-at
+    -- @@c
     -- @-node:gcross.20100530003420.1950:<< Check whether this point has been sampled before >>
     -- @nl
 
@@ -508,6 +512,9 @@ main = do
         multisweep_energy_change_convergence_criterion = 1e-4
         eigensolver_tolerance = 0
         maximum_allowed_eigensolver_iterations = 1000
+
+    testForHermiticityMultipleTimes 10 operator_site_tensors
+        >>= flip unless (putStrLn "The Hamiltonian is not Hermitian!" >> exitFailure)
 
     putStrLn $
         printf "Running simulation for lambda = %s with %i sites..."
@@ -586,23 +593,30 @@ main = do
 
     -- @    << Store in database >>
     -- @+node:gcross.20100530003420.1948:<< Store in database >>
-    number_of_rows_inserted <- withSession connection $ execDML
-        (cmdbind "insert into simulations (lambda, number_of_sites, energy_gap, multisweep_convergence_criterion, bandwidth_increase_convergence_criterion, running_time) values (?::numeric,?,?,?::numeric,?::numeric,?::interval);"
-             [bindP lambda_as_string
-             ,bindP number_of_sites
-             ,bindP energy_gap
-             ,bindP (show multisweep_energy_change_convergence_criterion)
-             ,bindP (show bandwidth_increase_energy_change_convergence_criterion)
-             ,bindP (show time_in_seconds ++ " seconds")
-             ]
-        )
-
-    if number_of_rows_inserted == 1
-        then putStrLn "Result stored in the database."
-        else putStrLn $
-                "Error adding the solution to the database. ("
-                ++ show number_of_rows_inserted ++
-                " rows inserted.)"
+    -- @+at
+    --  number_of_rows_inserted <- withSession connection $ execDML
+    --      (cmdbind "insert into simulations (lambda, number_of_sites, 
+    --  energy_gap, multisweep_convergence_criterion, 
+    --  bandwidth_increase_convergence_criterion, running_time) values 
+    --  (?::numeric,?,?,?::numeric,?::numeric,?::interval);"
+    --           [bindP lambda_as_string
+    --           ,bindP number_of_sites
+    --           ,bindP energy_gap
+    --           ,bindP (show multisweep_energy_change_convergence_criterion)
+    --           ,bindP (show 
+    --  bandwidth_increase_energy_change_convergence_criterion)
+    --           ,bindP (show time_in_seconds ++ " seconds")
+    --           ]
+    --      )
+    --  
+    --  if number_of_rows_inserted == 1
+    --      then putStrLn "Result stored in the database."
+    --      else putStrLn $
+    --              "Error adding the solution to the database. ("
+    --              ++ show number_of_rows_inserted ++
+    --              " rows inserted.)"
+    -- @-at
+    -- @@c
     -- @-node:gcross.20100530003420.1948:<< Store in database >>
     -- @nl
 -- @-node:gcross.20091120111528.1236:main
